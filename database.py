@@ -213,3 +213,67 @@ def modifica_password(id_login, titolo, username_criptato, password_criptata, si
     conn.commit()
     conn.close()
     return righe_modificate
+
+def vedi_categorie():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT id, nome
+        FROM categorie
+        ORDER BY nome
+        """
+    )
+
+    risultato = cursor.fetchall()
+    conn.close()
+    return risultato
+
+def rinomina_categoria(id_cat, nuovo_nome_cat):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            """
+            UPDATE categorie
+            SET nome = ?
+            WHERE id = ?
+            """,
+            (nuovo_nome_cat, id_cat)
+        )
+    except sqlite3.IntegrityError:
+        conn.close()
+        return None
+
+    righe_modificate = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return righe_modificate
+
+def elimina_categoria(id_categoria):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        UPDATE password
+        SET categoria_id = NULL
+        WHERE categoria_id = ?
+        """,
+        (id_categoria,)
+    )
+
+    cursor.execute(
+        """
+        DELETE FROM categorie
+        WHERE id = ?
+        """,
+        (id_categoria,)
+    )
+
+    righe_eliminate = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return righe_eliminate

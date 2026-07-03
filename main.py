@@ -10,8 +10,11 @@ from database import (
     leggi_password_per_id,
     elimina_password,
     modifica_password,
+    vedi_categorie,
+    rinomina_categoria,
+    elimina_categoria,
 )
-from crypto_utils import genera_chiave, cripta_testo, decripta_testo
+from crypto_utils import genera_chiave, cripta_testo, decripta_testo, genera_password_personalizzata
 import string
 import os
 import base64
@@ -51,6 +54,73 @@ def valida_master_password(password):
 
     return ha_maiuscola and ha_minuscola and ha_numero and ha_speciale
 
+def chiedi_si_no(domanda):
+    while True:
+        risposta = input(f"{domanda} s/n: ").strip().lower()
+
+        if risposta == "s":
+            return True
+
+        if risposta == "n":
+            return False
+
+        print("Risposta non valida, scrivi s oppure n")
+
+def chiedi_numero_intero(domanda, minimo=0, valore_default=None):
+    while True:
+        risposta = input(domanda).strip()
+
+        if not risposta and valore_default is not None:
+            return valore_default
+
+        if not risposta.isdigit():
+            print("Devi inserire un numero")
+            continue
+
+        numero = int(risposta)
+
+        if numero < minimo:
+            print(f"Il numero deve essere almeno {minimo}")
+            continue
+
+        return numero
+
+def genera_password_da_input():
+    lunghezza = chiedi_numero_intero("Lunghezza password (Invio = 16): ", minimo=1, valore_default=16)
+    usa_maiuscole = chiedi_si_no("Vuoi usare lettere maiuscole?")
+    usa_minuscole = chiedi_si_no("Vuoi usare lettere minuscole?")
+    usa_numeri = chiedi_si_no("Vuoi usare numeri?")
+    usa_speciali = chiedi_si_no("Vuoi usare caratteri speciali?")
+
+    minimo_numeri = 0
+    minimo_speciali = 0
+
+    if usa_numeri:
+        minimo_numeri = chiedi_numero_intero("Numero minimo di numeri: ", minimo=0, valore_default=0)
+
+    if usa_speciali:
+        minimo_speciali = chiedi_numero_intero("Numero minimo di caratteri speciali: ", minimo=0, valore_default=0)
+
+    try:
+        return genera_password_personalizzata(
+            lunghezza,
+            usa_maiuscole,
+            usa_minuscole,
+            usa_numeri,
+            usa_speciali,
+            minimo_numeri,
+            minimo_speciali
+        )
+    except ValueError as errore:
+        print(f"Impostazioni non valide: {errore}")
+        return None
+
+def mostra_generatore_password():
+    password = genera_password_da_input()
+
+    if password is not None:
+        print(f"Password generata: {password}")
+
 def login():
     salt_testo = leggi_impostazione("salt")
     token_criptato = leggi_impostazione("verification_token")
@@ -80,13 +150,27 @@ def login():
 def nuovo_save(chiave):
     titolo = input("Inserisci il nome del login che vuoi salvare: ").strip()
     username = input("Inserisci l'username del login che vuoi salvare: ").strip()
-    password = getpass("Inserisci la password del login che vuoi salvare: ")
+
+    if not titolo or not username:
+        print("Titolo e username sono obbligatori")
+        return
+
+    if chiedi_si_no("Vuoi generare una password sicura?"):
+        password = genera_password_da_input()
+
+        if password is None:
+            return
+
+        print(f"Password generata: {password}")
+    else:
+        password = getpass("Inserisci la password del login che vuoi salvare: ")
+
     sito = input("Inserisci il link del sito del login che vuoi salvare: ").strip()
 
     categoria = input("Inserisci la categoria del login che vuoi salvare: ").strip()
 
-    if not titolo or not username or not password:
-        print("Titolo, username e password sono obbligatori")
+    if not password:
+        print("La password e obbligatoria")
         return
 
     categoria_id = None
@@ -223,7 +307,17 @@ def modifica_login(chiave):
         print("\nSe non vuoi cambiare un valore, premi Invio")
         cambio_titolo = input("Inserisci il nuovo titolo: ").strip()
         cambio_username = input("Inserisci il nuovo username: ").strip()
-        cambio_password = getpass("Inserisci la nuova password: ")
+
+        if chiedi_si_no("Vuoi generare una nuova password sicura?"):
+            cambio_password = genera_password_da_input()
+
+            if cambio_password is None:
+                return
+
+            print(f"Password generata: {cambio_password}")
+        else:
+            cambio_password = getpass("Inserisci la nuova password: ")
+
         cambio_sito = input("Inserisci il nuovo sito: ").strip()
         cambio_categoria = input("Inserisci la nuova categoria: ").strip()
 
@@ -255,6 +349,102 @@ def modifica_login(chiave):
 
         return
 
+def gestisci_categorie():
+    while True:
+        risultati = vedi_categorie()
+
+        print("\n--- Categorie salvate ---")
+
+        if not risultati:
+            print("Non ci sono categorie salvate")
+        else:
+            for id_cat, nome_cat in risultati:
+                print(f"{id_cat}. {nome_cat}")
+
+        print("\n1. Aggiungi categoria")
+        print("2. Rinomina categoria")
+        print("3. Elimina categoria")
+        print("0. Torna al menu")
+
+        scelta = input("Scegli un'opzione: ").strip()
+
+        if scelta == "1":
+            nuova_categoria = input("Inserisci il nome della categoria che vuoi creare: ").strip()
+
+            if not nuova_categoria:
+                print("Non puoi inserire una categoria vuota")
+            else:
+                categoria_id = aggiungi_categoria(nuova_categoria)
+
+                if categoria_id is None:
+                    print("Categoria non salvata")
+                else:
+                    print("Categoria salvata correttamente")
+
+        elif scelta == "2":
+            id_categoria = input("Inserisci l'id della categoria che vuoi modificare: ").strip()
+
+            if not id_categoria.isdigit():
+                print("L'id deve essere un numero")
+                continue
+
+            risultato = leggi_nome_categoria(int(id_categoria))
+
+            if risultato is None:
+                print("Nessuna categoria trovata con questo id")
+                continue
+            else:
+                nuovo_nome = input("Inserisci il nuovo nome della categoria: ").strip()
+
+                if not nuovo_nome:
+                    print("Non puoi inserire una categoria vuota")
+                else:
+                    verifica = rinomina_categoria(int(id_categoria), nuovo_nome)
+
+                    if verifica is None:
+                        print("Esiste gia una categoria con questo nome")
+                    elif verifica:
+                        print("Categoria rinominata correttamente")
+                    else:
+                        print("Cambiamento non riuscito")
+
+        elif scelta == "3":
+            id_categoria = input("Inserisci l'id della categoria che vuoi eliminare: ").strip()
+
+            if not id_categoria.isdigit():
+                print("L'id deve essere un numero")
+                continue
+
+            risultato = leggi_nome_categoria(int(id_categoria))
+
+            if risultato is None:
+                print("Nessuna categoria trovata con questo id")
+                continue
+            else:
+                conferma = input(f"Sei sicuro di voler eliminare '{risultato}'? s/n: ").strip().lower()
+
+                if conferma == "s":
+                    righe_eliminate = elimina_categoria(int(id_categoria))
+
+                    if righe_eliminate:
+                        print("Categoria eliminata correttamente")
+                    else:
+                        print("Eliminazione non riuscita")
+
+                    continue
+
+                if conferma == "n":
+                    print("Eliminazione annullata")
+                    continue
+
+                print("Risposta non valida, scrivi s oppure n")
+
+        elif scelta == "0":
+            return
+
+        else:
+            print("Scelta non valida")
+
 def scelta_azione(chiave):
     while True:
         print("\n1. Crea nuovo login")
@@ -262,6 +452,8 @@ def scelta_azione(chiave):
         print("3. Vedi tutti i login salvati")
         print("4. Elimina un login in base al id")
         print("5. Modifica un login in base al id")
+        print("6. Gestisci le categorie")
+        print("7. Genera password sicura")
         print("0. Esci")
 
         scelta = input("Scegli un'opzione: ").strip()
@@ -276,15 +468,15 @@ def scelta_azione(chiave):
             elimina_login()
         elif scelta == "5":
             modifica_login(chiave)
+        elif scelta == "6":
+            gestisci_categorie()
+        elif scelta == "7":
+            mostra_generatore_password()
         elif scelta == "0":
             print("Programma chiuso")
             break
         else:
             print("Scelta non valida")
-
-def gestisci_categorie():
-    pass
-
 
 def main():
     crea_database()
