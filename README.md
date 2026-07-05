@@ -10,17 +10,7 @@ L'interfaccia grafica e realizzata con Tkinter e i dati vengono conservati in un
 
 ## b. Scopo
 
-Lo scopo del progetto e realizzare un password manager semplice ma completo, utile per applicare diversi argomenti studiati durante il corso:
-
-- programmazione in Python
-- funzioni e moduli
-- paradigma OOP
-- gestione degli errori
-- interfacce grafiche con Tkinter
-- database SQLite
-- uso di librerie esterne
-- crittografia dei dati
-- organizzazione del codice in piu file
+Lo scopo del progetto e realizzare un password manager semplice ma completo per salvare e gestire credenziali personali in modo piu sicuro rispetto a un normale file di testo.
 
 L'utente puo creare una cassaforte, accedere con master password, aggiungere credenziali, modificarle, eliminarle, organizzarle per categoria e generare password sicure.
 
@@ -30,12 +20,12 @@ L'utente puo creare una cassaforte, accedere con master password, aggiungere cre
 
 ```text
 password-manager-python/
-├── main.py
-├── ui.py
-├── database.py
-├── crypto_utils.py
-├── requirements.txt
-└── README.md
++-- main.py
++-- ui.py
++-- database.py
++-- crypto_utils.py
++-- requirements.txt
++-- README.md
 ```
 
 ### Ruolo dei file
