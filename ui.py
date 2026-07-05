@@ -563,7 +563,8 @@ class PasswordManagerApp:
     def apri_generatore_password(self, variabile_destinazione=None):
         finestra = tk.Toplevel(self.finestra)
         finestra.title("Generatore password")
-        finestra.geometry("420x380")
+        finestra.geometry("520x430")
+        finestra.minsize(520, 430)
 
         frame = ttk.Frame(finestra, padding=15)
         frame.pack(fill="both", expand=True)
