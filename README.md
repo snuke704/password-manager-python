@@ -9,20 +9,28 @@ Progetto Python per un esame: un password manager con database SQLite e crittogr
 - Crittografia di username e password salvati
 - Database SQLite locale
 - Inserimento, visualizzazione, modifica ed eliminazione dei login
-- Gestione base delle categorie durante il salvataggio dei login
+- Inserimento, modifica ed eliminazione delle categorie
+- Generatore di password personalizzabile
+- Interfaccia grafica con Tkinter
 
 ## Avvio
 
 Installa le dipendenze:
 
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 Esegui il programma:
 
 ```bash
 python main.py
+```
+
+Su Linux potrebbe essere necessario installare Tkinter:
+
+```bash
+sudo apt install python3-tk
 ```
 
 ## Note
