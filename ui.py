@@ -466,7 +466,8 @@ class PasswordManagerApp:
     def apri_finestra_categorie(self):
         finestra = tk.Toplevel(self.finestra)
         finestra.title("Categorie")
-        finestra.geometry("400x380")
+        finestra.geometry("520x400")
+        finestra.minsize(520, 400)
 
         frame = ttk.Frame(finestra, padding=15)
         frame.pack(fill="both", expand=True)
