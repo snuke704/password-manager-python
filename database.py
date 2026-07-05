@@ -4,10 +4,12 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 DB_NAME = BASE_DIR / "password_manager.db"
 
-def crea_database():
+def crea_database() -> None:
+    """Crea il database SQLite e le tabelle se non esistono gia."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
+    # impostazioni conserva salt e token di verifica della master password.
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS impostazioni (
         chiave TEXT PRIMARY KEY,
@@ -15,6 +17,7 @@ def crea_database():
     )
     """)
 
+    # categorie permette di raggruppare i login salvati.
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS categorie (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,6 +25,7 @@ def crea_database():
     )
     """)
 
+    # password contiene username e password gia criptati prima del salvataggio.
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS password (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -37,7 +41,8 @@ def crea_database():
     conn.commit()
     conn.close()
 
-def salva_impostazione(chiave, valore):
+def salva_impostazione(chiave: str, valore: str) -> None:
+    """Salva o aggiorna un valore nella tabella impostazioni."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -52,7 +57,8 @@ def salva_impostazione(chiave, valore):
     conn.commit()
     conn.close()
 
-def leggi_impostazione(chiave):
+def leggi_impostazione(chiave: str) -> str | None:
+    """Legge un valore dalla tabella impostazioni."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -68,7 +74,8 @@ def leggi_impostazione(chiave):
         return risultato[0]
     return None
 
-def aggiungi_categoria(nome):
+def aggiungi_categoria(nome: str) -> int | None:
+    """Aggiunge una categoria se non esiste e restituisce il suo id."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -91,7 +98,8 @@ def aggiungi_categoria(nome):
         return risultato[0]
     return None
 
-def leggi_nome_categoria(categoria_id):
+def leggi_nome_categoria(categoria_id: int | None) -> str | None:
+    """Restituisce il nome della categoria partendo dal suo id."""
     if categoria_id is None:
         return None
 
@@ -110,7 +118,14 @@ def leggi_nome_categoria(categoria_id):
         return risultato[0]
     return None
 
-def aggiungi_password(titolo, username_criptato, password_criptata, sito, categoria_id=None):
+def aggiungi_password(
+    titolo: str,
+    username_criptato: str,
+    password_criptata: str,
+    sito: str,
+    categoria_id: int | None = None
+) -> None:
+    """Inserisce un nuovo login nel database."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -125,7 +140,8 @@ def aggiungi_password(titolo, username_criptato, password_criptata, sito, catego
     conn.commit()
     conn.close()
 
-def leggi_password(titolo):
+def leggi_password(titolo: str) -> tuple | None:
+    """Cerca un login tramite titolo."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -142,7 +158,8 @@ def leggi_password(titolo):
     conn.close()
     return risultato
 
-def vedi_tutti_login():
+def vedi_tutti_login() -> list[tuple]:
+    """Restituisce l'elenco sintetico dei login da mostrare nella tabella."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -158,7 +175,8 @@ def vedi_tutti_login():
     conn.close()
     return risultato
 
-def leggi_password_per_id(id_login):
+def leggi_password_per_id(id_login: int) -> tuple | None:
+    """Legge un login completo partendo dal suo id."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -175,7 +193,8 @@ def leggi_password_per_id(id_login):
     conn.close()
     return risultato
 
-def elimina_password(id_login):
+def elimina_password(id_login: int) -> int:
+    """Elimina un login e restituisce il numero di righe eliminate."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -192,7 +211,15 @@ def elimina_password(id_login):
     conn.close()
     return righe_eliminate
 
-def modifica_password(id_login, titolo, username_criptato, password_criptata, sito, categoria_id):
+def modifica_password(
+    id_login: int,
+    titolo: str,
+    username_criptato: str,
+    password_criptata: str,
+    sito: str,
+    categoria_id: int | None
+) -> int:
+    """Aggiorna i dati di un login esistente."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -214,7 +241,8 @@ def modifica_password(id_login, titolo, username_criptato, password_criptata, si
     conn.close()
     return righe_modificate
 
-def vedi_categorie():
+def vedi_categorie() -> list[tuple]:
+    """Restituisce tutte le categorie ordinate per nome."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -230,7 +258,8 @@ def vedi_categorie():
     conn.close()
     return risultato
 
-def rinomina_categoria(id_cat, nuovo_nome_cat):
+def rinomina_categoria(id_cat: int, nuovo_nome_cat: str) -> int | None:
+    """Rinomina una categoria. Restituisce None se il nome esiste gia."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
@@ -252,10 +281,12 @@ def rinomina_categoria(id_cat, nuovo_nome_cat):
     conn.close()
     return righe_modificate
 
-def elimina_categoria(id_categoria):
+def elimina_categoria(id_categoria: int) -> int:
+    """Elimina una categoria e lascia senza categoria i login collegati."""
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
 
+    # Prima scollego i login dalla categoria, poi elimino la categoria.
     cursor.execute(
         """
         UPDATE password

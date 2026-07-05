@@ -54,7 +54,8 @@ from database import (
 TOKEN_VERIFICA = "main_pass_ok"
 
 
-def valida_master_password(password):
+def valida_master_password(password: str) -> bool:
+    """Controlla che la master password rispetti requisiti minimi di sicurezza."""
     if len(password) < 10:
         return False
 
@@ -67,6 +68,8 @@ def valida_master_password(password):
 
 
 class PasswordManagerApp:
+    """Classe principale che gestisce tutta l'interfaccia grafica Tkinter."""
+
     def __init__(self):
         crea_database()
 
@@ -82,25 +85,30 @@ class PasswordManagerApp:
         self.configura_stile()
         self.mostra_schermata_accesso()
 
-    def configura_stile(self):
+    def configura_stile(self) -> None:
+        """Imposta uno stile base per rendere la GUI piu leggibile."""
         stile = ttk.Style()
         stile.theme_use("clam")
         stile.configure("TButton", padding=6)
         stile.configure("Treeview", rowheight=28)
 
-    def avvia(self):
+    def avvia(self) -> None:
+        """Avvia il ciclo principale di Tkinter."""
         self.finestra.mainloop()
 
-    def pulisci_finestra(self):
+    def pulisci_finestra(self) -> None:
+        """Rimuove il frame corrente prima di mostrare una nuova schermata."""
         if self.frame_attuale is not None:
             self.frame_attuale.destroy()
 
-    def master_password_esiste(self):
+    def master_password_esiste(self) -> bool:
+        """Verifica se la cassaforte e gia stata configurata."""
         salt = leggi_impostazione("salt")
         token = leggi_impostazione("verification_token")
         return salt is not None and token is not None
 
-    def mostra_schermata_accesso(self):
+    def mostra_schermata_accesso(self) -> None:
+        """Mostra la schermata di creazione o accesso alla cassaforte."""
         self.pulisci_finestra()
         self.chiave = None
 
@@ -158,13 +166,15 @@ class PasswordManagerApp:
         password_entry.focus()
         password_entry.bind("<Return>", lambda evento: invia())
 
-    def mostra_o_nascondi_password(self, entry, variabile):
+    def mostra_o_nascondi_password(self, entry: ttk.Entry, variabile: tk.BooleanVar) -> None:
+        """Mostra o nasconde il contenuto di un campo password."""
         if variabile.get():
             entry.config(show="")
         else:
             entry.config(show="*")
 
-    def crea_cassaforte(self, password, conferma):
+    def crea_cassaforte(self, password: str, conferma: str) -> None:
+        """Crea la cassaforte salvando salt e token criptato nel database."""
         if not valida_master_password(password):
             messagebox.showerror(
                 "Errore",
@@ -176,21 +186,25 @@ class PasswordManagerApp:
             messagebox.showerror("Errore", "Le password non coincidono.")
             return
 
+        # Il salt rende diversa la chiave anche se due utenti scelgono la stessa password.
         salt = os.urandom(16)
         self.chiave = genera_chiave(password, salt)
         token_criptato = cripta_testo(TOKEN_VERIFICA, self.chiave)
 
+        # La master password non viene salvata: salvo solo salt e token di verifica.
         salva_impostazione("salt", base64.b64encode(salt).decode())
         salva_impostazione("verification_token", token_criptato)
 
         messagebox.showinfo("OK", "Cassaforte creata correttamente.")
         self.mostra_schermata_principale()
 
-    def accedi_cassaforte(self, password):
+    def accedi_cassaforte(self, password: str) -> None:
+        """Prova a ricostruire la chiave e verificare la master password."""
         salt_testo = leggi_impostazione("salt")
         token_criptato = leggi_impostazione("verification_token")
 
         try:
+            # Se la password e sbagliata, la decrittazione del token fallisce.
             salt = base64.b64decode(salt_testo)
             chiave = genera_chiave(password, salt)
             token = decripta_testo(token_criptato, chiave)
@@ -205,7 +219,8 @@ class PasswordManagerApp:
         self.chiave = chiave
         self.mostra_schermata_principale()
 
-    def mostra_schermata_principale(self):
+    def mostra_schermata_principale(self) -> None:
+        """Mostra la finestra principale dopo l'accesso."""
         self.pulisci_finestra()
 
         frame = ttk.Frame(self.finestra, padding=15)
@@ -257,7 +272,8 @@ class PasswordManagerApp:
 
         self.aggiorna_tabella()
 
-    def lista_categorie_per_filtro(self):
+    def lista_categorie_per_filtro(self) -> list[str]:
+        """Prepara le categorie da mostrare nel filtro della tabella."""
         categorie = ["Tutte", "Senza categoria"]
 
         for _id, nome in vedi_categorie():
@@ -265,7 +281,8 @@ class PasswordManagerApp:
 
         return categorie
 
-    def lista_categorie_per_form(self):
+    def lista_categorie_per_form(self) -> list[str]:
+        """Prepara le categorie disponibili nel form di inserimento login."""
         categorie = [""]
 
         for _id, nome in vedi_categorie():
@@ -273,7 +290,8 @@ class PasswordManagerApp:
 
         return categorie
 
-    def aggiorna_tabella(self):
+    def aggiorna_tabella(self) -> None:
+        """Ricarica la tabella dei login applicando ricerca e filtro categoria."""
         for riga in self.tabella.get_children():
             self.tabella.delete(riga)
 
@@ -299,7 +317,8 @@ class PasswordManagerApp:
         if self.filtro_categoria_var.get() not in categorie:
             self.filtro_categoria_var.set("Tutte")
 
-    def leggi_login_decriptato(self, id_login):
+    def leggi_login_decriptato(self, id_login: int) -> dict | None:
+        """Legge un login dal database e decripta username e password."""
         risultato = leggi_password_per_id(id_login)
 
         if risultato is None:
@@ -308,6 +327,7 @@ class PasswordManagerApp:
         titolo, username_criptato, password_criptata, sito, categoria_id = risultato
 
         try:
+            # I dati vengono decriptati solo dopo il login con master password corretta.
             username = decripta_testo(username_criptato, self.chiave)
             password = decripta_testo(password_criptata, self.chiave)
         except InvalidToken:
@@ -323,7 +343,8 @@ class PasswordManagerApp:
             "categoria": leggi_nome_categoria(categoria_id) or "",
         }
 
-    def id_login_selezionato(self):
+    def id_login_selezionato(self) -> int | None:
+        """Restituisce l'id del login selezionato nella tabella."""
         selezione = self.tabella.selection()
 
         if not selezione:
@@ -332,7 +353,8 @@ class PasswordManagerApp:
 
         return int(selezione[0])
 
-    def apri_form_login(self, login=None):
+    def apri_form_login(self, login: dict | None = None) -> None:
+        """Apre il form per aggiungere un nuovo login o modificarne uno esistente."""
         finestra = tk.Toplevel(self.finestra)
         finestra.title("Modifica login" if login else "Aggiungi login")
         finestra.geometry("450x430")
@@ -391,6 +413,7 @@ class PasswordManagerApp:
             if categoria:
                 categoria_id = aggiungi_categoria(categoria)
 
+            # Username e password vengono criptati prima di essere salvati su SQLite.
             username_criptato = cripta_testo(username, self.chiave)
             password_criptata = cripta_testo(password, self.chiave)
 
@@ -408,13 +431,15 @@ class PasswordManagerApp:
         ttk.Button(bottoni, text="Annulla", command=finestra.destroy).pack(side="right", padx=5)
         ttk.Button(bottoni, text="Salva", command=salva_login).pack(side="right", padx=5)
 
-    def crea_campo_testo(self, frame, testo, variabile):
+    def crea_campo_testo(self, frame: ttk.Frame, testo: str, variabile: tk.StringVar) -> ttk.Entry:
+        """Crea una label e un campo di testo riutilizzabile nei form."""
         ttk.Label(frame, text=testo).pack(anchor="w", pady=(10, 0))
         entry = ttk.Entry(frame, textvariable=variabile)
         entry.pack(fill="x")
         return entry
 
-    def visualizza_login_selezionato(self):
+    def visualizza_login_selezionato(self) -> None:
+        """Mostra i dati completi del login selezionato."""
         id_login = self.id_login_selezionato()
 
         if id_login is None:
@@ -435,7 +460,8 @@ class PasswordManagerApp:
         )
         messagebox.showinfo("Login salvato", testo)
 
-    def modifica_login_selezionato(self):
+    def modifica_login_selezionato(self) -> None:
+        """Apre il form di modifica per il login selezionato."""
         id_login = self.id_login_selezionato()
 
         if id_login is None:
@@ -446,7 +472,8 @@ class PasswordManagerApp:
         if login is not None:
             self.apri_form_login(login)
 
-    def elimina_login_selezionato(self):
+    def elimina_login_selezionato(self) -> None:
+        """Elimina il login selezionato dopo conferma dell'utente."""
         id_login = self.id_login_selezionato()
 
         if id_login is None:
@@ -463,7 +490,8 @@ class PasswordManagerApp:
             elimina_password(id_login)
             self.aggiorna_tabella()
 
-    def apri_finestra_categorie(self):
+    def apri_finestra_categorie(self) -> None:
+        """Apre la finestra per aggiungere, rinominare o eliminare categorie."""
         finestra = tk.Toplevel(self.finestra)
         finestra.title("Categorie")
         finestra.geometry("520x400")
@@ -561,7 +589,8 @@ class PasswordManagerApp:
 
         aggiorna_lista()
 
-    def apri_generatore_password(self, variabile_destinazione=None):
+    def apri_generatore_password(self, variabile_destinazione: tk.StringVar | None = None) -> None:
+        """Apre il generatore di password, eventualmente collegato al form login."""
         finestra = tk.Toplevel(self.finestra)
         finestra.title("Generatore password")
         finestra.geometry("520x430")
@@ -598,6 +627,7 @@ class PasswordManagerApp:
 
         def genera():
             try:
+                # Uso la funzione nel modulo crypto_utils per tenere separata logica e grafica.
                 password = genera_password_personalizzata(
                     lunghezza_var.get(),
                     maiuscole_var.get(),
@@ -632,6 +662,7 @@ class PasswordManagerApp:
         genera()
 
 
-def avvia_app():
+def avvia_app() -> None:
+    """Funzione chiamata da main.py per avviare l'applicazione."""
     app = PasswordManagerApp()
     app.avvia()

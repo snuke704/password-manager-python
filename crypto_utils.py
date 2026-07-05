@@ -6,7 +6,13 @@ import secrets
 import string
 
 
-def genera_chiave(master_password, salt):
+def genera_chiave(master_password: str, salt: bytes) -> bytes:
+    """
+    Genera una chiave Fernet partendo dalla master password.
+
+    La password non viene usata direttamente come chiave: PBKDF2HMAC la
+    trasforma in una chiave sicura usando un salt e molte iterazioni.
+    """
     kdf = PBKDF2HMAC(
         algorithm=hashes.SHA256(),
         length=32,
@@ -20,25 +26,33 @@ def genera_chiave(master_password, salt):
 
     return chiave
 
-def cripta_testo(testo, chiave):
+def cripta_testo(testo: str, chiave: bytes) -> str:
+    """Cripta una stringa e restituisce il risultato in formato testo."""
     fernet = Fernet(chiave)
     testo_criptato = fernet.encrypt(testo.encode())
     return testo_criptato.decode()
 
-def decripta_testo(testo_criptato, chiave):
+def decripta_testo(testo_criptato: str, chiave: bytes) -> str:
+    """Decripta una stringa cifrata con la stessa chiave Fernet."""
     fernet = Fernet(chiave)
     testo = fernet.decrypt(testo_criptato.encode())
     return testo.decode()
 
 def genera_password_personalizzata(
-    lunghezza=16,
-    usa_maiuscole=True,
-    usa_minuscole=True,
-    usa_numeri=True,
-    usa_speciali=True,
-    minimo_numeri=0,
-    minimo_speciali=0
-):
+    lunghezza: int = 16,
+    usa_maiuscole: bool = True,
+    usa_minuscole: bool = True,
+    usa_numeri: bool = True,
+    usa_speciali: bool = True,
+    minimo_numeri: int = 0,
+    minimo_speciali: int = 0
+) -> str:
+    """
+    Genera una password casuale rispettando i criteri scelti dall'utente.
+
+    secrets viene usato al posto di random perche e piu adatto a valori
+    collegati alla sicurezza, come password e token.
+    """
     if lunghezza <= 0:
         raise ValueError("La lunghezza deve essere maggiore di zero")
 
@@ -75,10 +89,12 @@ def genera_password_personalizzata(
     if not gruppi_caratteri:
         raise ValueError("Devi scegliere almeno un tipo di carattere")
 
+    # Unisco tutti i gruppi abilitati per riempire la parte restante.
     caratteri_disponibili = "".join(gruppi_caratteri)
 
     password = []
 
+    # Inserisco prima i caratteri minimi obbligatori.
     for _ in range(minimo_maiuscole):
         password.append(secrets.choice(string.ascii_uppercase))
 
@@ -94,6 +110,7 @@ def genera_password_personalizzata(
     while len(password) < lunghezza:
         password.append(secrets.choice(caratteri_disponibili))
 
+    # Mescolo la password per non lasciare i caratteri obbligatori sempre all'inizio.
     secrets.SystemRandom().shuffle(password)
 
     return "".join(password)
