@@ -13,7 +13,20 @@ Progetto Python per un esame: un password manager con database SQLite e crittogr
 - Generatore di password personalizzabile
 - Interfaccia grafica con Tkinter
 
-## Avvio
+## Avvio su Linux
+
+Installa Tkinter, se non e gia presente:
+
+```bash
+sudo apt install python3-tk
+```
+
+Crea e attiva un ambiente virtuale:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
 Installa le dipendenze:
 
@@ -21,16 +34,20 @@ Installa le dipendenze:
 python -m pip install -r requirements.txt
 ```
 
-Esegui il programma:
+Avvia il programma:
 
 ```bash
 python main.py
 ```
 
-Su Linux potrebbe essere necessario installare Tkinter:
+## Avvio su Windows
 
-```bash
-sudo apt install python3-tk
+Da PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe main.py
 ```
 
 ## Note

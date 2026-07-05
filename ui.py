@@ -18,8 +18,13 @@ def sistema_percorso_tkinter():
 
 sistema_percorso_tkinter()
 
-import tkinter as tk
-from tkinter import messagebox, simpledialog, ttk
+try:
+    import tkinter as tk
+    from tkinter import messagebox, simpledialog, ttk
+except ModuleNotFoundError:
+    print("Errore: Tkinter non e installato.")
+    print("Su Linux Debian/Ubuntu installalo con: sudo apt install python3-tk")
+    raise
 
 from cryptography.fernet import InvalidToken
 
@@ -106,7 +111,7 @@ class PasswordManagerApp:
         self.frame_attuale = frame
 
         titolo = "Crea cassaforte" if primo_accesso else "Accedi alla cassaforte"
-        ttk.Label(frame, text=titolo, font=("Segoe UI", 18, "bold")).pack(pady=(40, 20))
+        ttk.Label(frame, text=titolo, font=("TkDefaultFont", 18, "bold")).pack(pady=(40, 20))
 
         ttk.Label(frame, text="Master password").pack()
 
@@ -210,7 +215,7 @@ class PasswordManagerApp:
         barra_superiore = ttk.Frame(frame)
         barra_superiore.pack(fill="x", pady=(0, 10))
 
-        ttk.Label(barra_superiore, text="Password Manager", font=("Segoe UI", 18, "bold")).pack(side="left")
+        ttk.Label(barra_superiore, text="Password Manager", font=("TkDefaultFont", 18, "bold")).pack(side="left")
         ttk.Button(barra_superiore, text="Blocca", command=self.mostra_schermata_accesso).pack(side="right", padx=4)
         ttk.Button(barra_superiore, text="Categorie", command=self.apri_finestra_categorie).pack(side="right", padx=4)
         ttk.Button(barra_superiore, text="Genera password", command=self.apri_generatore_password).pack(side="right", padx=4)
